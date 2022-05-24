@@ -2,6 +2,7 @@ const express = require('express')
 const app = express()
 require('dotenv').config()
 const cors = require('cors')
+var jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000
 
 app.use(cors());
@@ -23,6 +24,9 @@ async function run() {
     await client.connect();
     console.log('thsi is me')
     const serviceCollection = client.db("prats").collection("machine")
+    const userCollection = client.db("prats").collection("user")
+
+    // All Service get database
 
     app.get('/service', async (req, res) => {
 
@@ -32,6 +36,23 @@ async function run() {
       res.send(services)
 
     })
+
+          // Database UserCollection 
+          app.put('/user/:email', async (req, res) =>{
+            const email = req.params.email;
+            const user = req.body
+            const filter = {email: email};
+            const options = { upsert: true };
+            const updateDoc = {
+              $set: user
+                
+              
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            const token  = jwt.sign({ email:email }, process.env.ACCESS_TOKEN_SECRET,{ expiresIn: '1h' });
+            res.send({result, token})
+
+          })
 
 
 
