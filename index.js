@@ -5,6 +5,9 @@ const cors = require('cors')
 var jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000
 
+const stripe = require("stripe")(process.env.STRIPT_SECRET_KEY);
+
+
 app.use(cors());
 app.use(express.json());
 
@@ -14,7 +17,7 @@ app.get('/', (req, res) => {
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.dkxov.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
@@ -24,7 +27,7 @@ function verifyJWT(req, res, next){
     return res.status(401).send({message: 'unAuthrization access'})
   }
   const token = authHeader.split(' ')[1]
-  jwt.verify(token. process.env.ACCESS_TOKEN_SECRET, function (err,decoded){
+  jwt.verify(token,process.env.ACCESS_TOKEN_SECRET, function (err,decoded){
     if(err){
       return res.status(403).send({message: 'forbidden access'})
     }
@@ -53,6 +56,22 @@ async function run() {
       res.send(services)
 
     })
+
+
+    // payment item
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types_:[ "card"]
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      });
+        
+      });
 
           // Database UserCollection 
           app.put('/user/:email', async (req, res) =>{
@@ -133,6 +152,14 @@ async function run() {
             const result = await serviceCollection.insertOne(addproduct);
             res.send(result)
       
+          })
+
+          // payment issue
+          app.get('/order/:id', verifyJWT, async (req, res) =>{
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const service = await orderCollection.findOne(query);
+            res.send(service); 
           })
 
 
