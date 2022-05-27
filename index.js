@@ -45,6 +45,7 @@ async function run() {
     const userCollection = client.db("prats").collection("user")
     const orderCollection = client.db("prats").collection("orders")
     const addProductCollection = client.db("prats").collection("addProduct")
+    const reviewCollection = client.db("prats").collection("review")
 
     // All Service get database
 
@@ -160,6 +161,24 @@ async function run() {
             const query = {_id: ObjectId(id)};
             const service = await orderCollection.findOne(query);
             res.send(service); 
+          })
+
+
+          // review item
+
+          app.post('/review', async (req, res) =>{
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review)
+            res.send(result)
+          })
+
+
+          app.get('/review', async (req, res) =>{
+            const query = {}
+      const cursor = reviewCollection.find(query);
+      const review = await cursor.toArray();
+      res.send(review)
+
           })
 
 
